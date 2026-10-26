@@ -1,0 +1,820 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>X-Split</title>
+<meta name="description" content="X-Split: split group travel expenses in any currency.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23d6527c'/%3E%3Cpath d='M16 2a14 14 0 0 1 0 28z' fill='%23f6c453'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f3f3f6; --card:#fff; --ink:#18181d; --ink2:#3a3a44; --mute:#62626e; --line:#e6e6ec; --soft:#f6f6f9;
+  --side:#1b1b20; --side-ink:#d4d4dc; --side-hover:#2c2c33;
+  --pink:#c8456f; --pink-l:#f9e3ea; --coral:#ee8a72; --yellow:#f6c453; --yellow-d:#e2a91f;
+  --ok:#17803d; --ok-l:#e3f4e8; --bad:#c42b3d; --bad-l:#fbe6e8;
+  --r:18px; --r-s:12px; --shadow:0 1px 2px rgba(20,20,30,.04),0 4px 16px rgba(20,20,30,.05);
+  --font:"Segoe UI Variable Text","Segoe UI",Inter,system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font:16px/1.5 var(--font);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+h1,h2,h3{margin:0;line-height:1.25;color:var(--ink)} h1{font-size:28px;font-weight:700;letter-spacing:-.02em}
+h2{font-size:20px;font-weight:650} h3{font-size:17px;font-weight:650}
+p{margin:0}
+a{color:var(--pink)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid #f2a8bf;outline-offset:2px;border-radius:8px}
+[hidden]{display:none!important}
+
+/* ---------- shell ---------- */
+.shell{display:flex;min-height:100vh}
+.side{width:248px;flex:none;background:var(--side);color:var(--side-ink);display:flex;flex-direction:column;padding:28px 18px;position:sticky;top:0;height:100vh}
+.logo{display:flex;align-items:center;gap:10px;color:#fff;font-weight:700;font-size:21px;padding:0 10px 28px}
+.logo svg{width:28px;height:28px}
+.logo b{color:var(--pink);font-weight:700}
+.nav{display:flex;flex-direction:column;gap:6px}
+.nav button{display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;color:var(--side-ink);padding:12px 14px;border-radius:12px;cursor:pointer;font-size:16px;text-align:left;position:relative}
+.nav button:hover{background:var(--side-hover);color:#fff}
+.nav button[aria-current="page"]{background:#3a3a42;color:#fff;font-weight:600}
+.nav svg{width:20px;height:20px;flex:none}
+.nav .count{margin-left:auto;background:var(--yellow);color:#1b1b20;font-size:12px;font-weight:700;border-radius:10px;padding:1px 8px}
+.side .spacer{flex:1}
+.side .foot{font-size:13px;color:#9a9aa6;padding:12px 14px 0}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.top{display:flex;align-items:center;gap:14px;padding:28px 36px 8px}
+.top h1{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.iconbtn{width:44px;height:44px;border-radius:50%;border:0;background:var(--card);box-shadow:var(--shadow);display:grid;place-items:center;cursor:pointer;position:relative;flex:none}
+.iconbtn svg{width:20px;height:20px}
+.iconbtn .dot{position:absolute;top:9px;right:10px;width:9px;height:9px;background:var(--pink);border:2px solid #fff;border-radius:50%}
+.me{display:flex;align-items:center;gap:10px;background:none;border:0;cursor:pointer;padding:4px;border-radius:30px}
+.avatar{width:42px;height:42px;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--pink),var(--coral));flex:none!important;min-width:0!important}
+.avatar-lg{width:64px;height:64px;font-size:22px}
+.me span{font-weight:600}
+#app{padding:16px 36px 40px;max-width:1360px;width:100%}
+.bare .side,.bare .top{display:none}
+.bare #app{margin:0 auto}
+
+/* ---------- building blocks ---------- */
+.card{background:var(--card);border-radius:var(--r);padding:22px;box-shadow:var(--shadow);min-width:0}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.grid{display:grid;gap:20px;align-items:start}
+.g-stats{align-items:stretch}
+.g-stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+.g-stats3{grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch}
+.g-charts{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);align-items:stretch}
+.g-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g-main{grid-template-columns:minmax(0,1fr) 340px}
+.stack{display:flex;flex-direction:column;gap:20px;min-width:0}
+.mt{margin-top:20px}
+.stat{display:flex;align-items:center;gap:14px;padding:18px 20px}
+.stat .ic{width:46px;height:46px;border-radius:50%;background:var(--soft);display:grid;place-items:center;flex:none}
+.stat .ic svg{width:21px;height:21px}
+.stat .k{color:var(--mute);font-size:14px}
+.stat .v{font-size:22px;font-weight:700;letter-spacing:-.01em;line-height:1.2;overflow-wrap:anywhere}
+.stat .v small{font-size:13px;font-weight:600;color:var(--mute);margin-left:4px;letter-spacing:0;white-space:nowrap;display:inline-block}
+.stat .v{overflow-wrap:normal;word-break:normal}
+.g-charts>.card{display:flex;flex-direction:column}.g-charts .chart-pad{flex:1;display:flex;flex-direction:column}.g-charts .bars{flex:1;height:auto;min-height:220px;max-height:340px}
+.cta{background:var(--side);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;border:0;cursor:pointer;text-align:left;font-size:17px;font-weight:600;line-height:1.35}
+.cta:hover{background:#2a2a31}
+.cta svg{width:24px;height:24px;flex:none}
+.promo{background:radial-gradient(120% 90% at 100% 30%,rgba(246,196,83,.85),rgba(246,196,83,0) 55%),radial-gradient(120% 120% at 0% 0%,#7a3156,#1b1b20 70%);color:#fff;padding:28px 24px}
+.promo h2{color:#fff;font-size:24px;line-height:1.25;margin-bottom:18px}
+.promo p{color:#f1e7ec;margin-bottom:18px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:30px;padding:10px 20px;font-weight:600;font-size:15px;cursor:pointer;border:1.5px solid transparent;white-space:nowrap;text-decoration:none;min-height:44px}
+.btn svg{width:18px;height:18px}
+.btn-dark{background:var(--ink);color:#fff}.btn-dark:hover{background:#34343c}
+.btn-line{background:#fff;border-color:var(--ink);color:var(--ink)}.btn-line:hover{background:var(--soft)}
+.btn-accent{background:var(--yellow);color:#1b1b20;border-radius:12px}.btn-accent:hover{background:#f3b93a}
+.btn-soft{background:var(--soft);color:var(--ink);border-color:var(--line)}.btn-soft:hover{background:#ececf1}
+.btn-danger{background:var(--bad-l);color:var(--bad)}.btn-danger:hover{background:#f7d3d8}
+.btn-sm{padding:6px 14px;min-height:36px;font-size:14px}
+.btn-block{width:100%}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.pill{display:inline-flex;align-items:center;gap:4px;background:var(--soft);color:var(--ink2);border:1px solid var(--line);border-radius:20px;padding:2px 10px;font-size:13px;font-weight:600;white-space:nowrap}
+.pill.pink{background:var(--pink-l);color:#9c2a50;border-color:#f3c9d6}
+.pill.ok{background:var(--ok-l);color:var(--ok);border-color:#c4e6cf}
+.pill.yellow{background:#fff3d6;color:#7a5600;border-color:#f5dd9e}
+.mute{color:var(--mute)} .small{font-size:14px}
+.pos{color:var(--ok);font-weight:650}.neg{color:var(--bad);font-weight:650}
+.empty{text-align:center;padding:28px 12px;color:var(--mute)}
+.empty b{display:block;color:var(--ink);font-size:17px;margin-bottom:4px}
+.row{display:flex;gap:16px;flex-wrap:wrap}.row>*{flex:1;min-width:min(100%,200px)}
+.list>*+*{border-top:1px solid var(--line)}
+.li{display:flex;align-items:center;gap:14px;padding:14px 0;min-width:0}
+.li .grow{flex:1;min-width:0}
+.li .t{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{width:44px;height:44px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-weight:700;font-size:14px;color:var(--ink2);flex:none}
+.timeline .li{align-items:flex-start;padding:14px 0}
+.timeline .when{width:84px;flex:none;font-size:14px;color:var(--ink2);font-weight:600;padding-top:2px}
+.timeline .what{border-left:2px solid var(--ink);padding-left:12px;min-width:0;flex:1}
+.timeline .what .k{font-size:13px;color:var(--mute)}
+
+/* ---------- forms ---------- */
+label{display:block;font-size:14px;font-weight:600;color:var(--ink2);margin:14px 0 6px}
+input,select,textarea{width:100%;padding:11px 13px;border:1.5px solid #cdcdd6;border-radius:var(--r-s);background:#fff;min-height:46px;font-size:16px}
+input:focus,select:focus{border-color:var(--pink);outline:none;box-shadow:0 0 0 3px var(--pink-l)}
+input:disabled{background:var(--soft);color:var(--ink2)}
+input[type=checkbox]{width:20px;height:20px;min-height:0;accent-color:var(--pink);margin:0;flex:none}
+input[type=file]{padding:9px;background:var(--soft)}
+.hint{font-size:14px;color:var(--mute);margin-top:6px}
+.hint.bad{color:var(--bad);font-weight:600}.hint.good{color:var(--ok);font-weight:600}
+.seg{display:inline-flex;background:var(--soft);border:1px solid var(--line);border-radius:30px;padding:4px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:none;padding:8px 16px;border-radius:24px;cursor:pointer;font-weight:600;color:var(--ink2);font-size:15px}
+.seg button[aria-selected="true"]{background:var(--ink);color:#fff}
+.part{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1.5px solid var(--line);border-radius:var(--r-s);margin-top:8px;cursor:pointer}
+.part.on{border-color:#e8a3b9;background:#fff8fa}
+.part .nm{flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.part input.pv{width:130px;flex:none}
+.part .share{font-size:14px;color:var(--mute);white-space:nowrap}
+
+/* ---------- tables ---------- */
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse}
+th{font-size:13px;font-weight:650;color:var(--mute);text-transform:uppercase;letter-spacing:.03em;text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:14px 12px;border-bottom:1px solid var(--line);vertical-align:top;font-size:15px}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;white-space:nowrap}
+.exp-split{font-size:14px;color:var(--mute);line-height:1.6}
+.exp .tags{margin-top:4px;display:flex;gap:6px;flex-wrap:wrap}
+.exp .c-meta,.exp .m-cur{display:none}
+@media (max-width:760px){
+  .exp,.exp tbody{display:block}
+  .exp tr:first-child{display:none}
+  .exp tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:14px 0;border-bottom:1px solid var(--line)}
+  .exp tr:last-child{border-bottom:0}
+  .exp td{display:block;border:0;padding:0;font-size:15px}
+  .exp .c-date,.exp .c-payer,.exp .c-amt{display:none}
+  .exp .c-desc{grid-column:1;grid-row:1}
+  .exp .c-base{grid-column:2;grid-row:1;text-align:right}
+  .exp .c-meta{display:block;grid-column:1/-1;font-size:14px;color:var(--ink2)}
+  .exp .m-cur{display:inline;font-size:13px;color:var(--mute)}
+  .exp .c-split{grid-column:1/-1}
+  .exp .c-act{grid-column:1/-1;margin-top:6px}
+  .exp .c-act:empty{display:none}
+}
+
+/* ---------- charts ---------- */
+.bars{display:flex;gap:10px;height:220px;padding-left:40px;position:relative;margin-top:6px}
+.bars .grid-l{position:absolute;left:40px;right:0;border-top:1px dashed #dcdce3}
+.bars .grid-l span{position:absolute;left:-40px;top:-10px;font-size:12px;color:var(--mute);width:34px;text-align:right}
+.bars .col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0;position:relative;z-index:1}
+.bars .bar{width:min(46px,70%);border-radius:8px 8px 4px 4px;background:linear-gradient(180deg,var(--coral),var(--pink));min-height:3px}
+.bars .lbl{position:absolute;bottom:-28px;font-size:13px;color:var(--ink2);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.bars .val{font-size:12px;font-weight:650;color:var(--ink2);margin-bottom:4px;white-space:nowrap}
+.chart-pad{padding-bottom:30px}
+.donut{display:block;margin:4px auto 10px;width:190px;height:190px}
+.legend .li{padding:9px 0}
+.sw{width:14px;height:14px;border-radius:4px;flex:none}
+.prog{height:8px;background:#ececf1;border-radius:6px;overflow:hidden;width:100%}
+.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--pink),var(--coral));border-radius:6px}
+
+/* ---------- group header & tabs ---------- */
+.ghead{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.ghead .grow{flex:1;min-width:200px}
+.tabs{display:flex;gap:6px;margin:18px 0 20px;overflow-x:auto;padding-bottom:2px}
+.tabs button{border:1.5px solid var(--line);background:#fff;padding:9px 18px;border-radius:30px;cursor:pointer;font-weight:600;white-space:nowrap;color:var(--ink2);font-size:15px}
+.tabs button[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+
+/* ---------- auth ---------- */
+.auth{display:grid;grid-template-columns:1fr 1fr;max-width:1000px;margin:6vh auto 0;border-radius:24px;overflow:hidden;box-shadow:var(--shadow);background:#fff}
+.auth .promo{border-radius:0;display:flex;flex-direction:column;justify-content:space-between;min-height:520px;padding:40px}
+.auth .promo h2{font-size:34px}
+.auth .promo ul{margin:0;padding:0;list-style:none;color:#f5edf1}
+.auth .promo li{padding:6px 0 6px 28px;position:relative}
+.auth .promo li:before{content:"";position:absolute;left:0;top:12px;width:14px;height:14px;border-radius:50%;background:var(--yellow)}
+.auth .forms{padding:40px}
+
+/* ---------- receipt items, banner, busy overlay ---------- */
+.itm{border:1.5px solid var(--line);border-radius:var(--r-s);padding:12px;margin-top:10px;background:#fff}
+.itm-top{display:flex;gap:8px;align-items:center}.itm-top .iname{flex:1;min-width:0}.itm-top .iprice{width:120px;flex:none}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{border:1.5px solid #cdcdd6;background:#fff;border-radius:20px;padding:6px 12px;font-weight:600;font-size:14px;cursor:pointer;min-height:36px;color:var(--ink2)}
+.chip[aria-pressed="true"]{background:var(--pink-l);border-color:#e3a0b6;color:#8f2449}
+.chip[aria-pressed="true"]:before{content:"\2713  "}
+.chip.all{border-style:dashed;color:var(--mute)}
+.iprice.need{border-color:var(--bad);box-shadow:0 0 0 3px var(--bad-l)}
+.banner{background:var(--ok-l);border:1.5px solid #bfe3cb;color:#14532d;border-radius:var(--r-s);padding:12px 16px;margin-bottom:16px}
+.banner.warn{background:#fff3d6;border-color:#f5dd9e;color:#5c4100}
+.busy{position:fixed;inset:0;background:rgba(24,24,29,.45);display:grid;place-items:center;z-index:60;padding:16px}
+.busy .card{max-width:380px;text-align:center}.busy h2{margin:10px 0 6px}
+.spin{width:38px;height:38px;border:4px solid var(--pink-l);border-top-color:var(--pink);border-radius:50%;margin:0 auto;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:3s}}
+@media (max-width:520px){.seg4 button{font-size:13px}.itm-top .iprice{width:78px;padding:11px 8px}}
+
+/* ---------- toast ---------- */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 20px;border-radius:12px;display:none;z-index:50;max-width:calc(100% - 32px);font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.toast.err{background:var(--bad)}
+
+/* ---------- responsive ---------- */
+@media (max-width:1200px){.g-main{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:1100px) and (min-width:861px){.g-charts{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:980px){.g-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:860px){
+  .shell{flex-direction:column}
+  .side{position:fixed;bottom:0;top:auto;left:0;right:0;height:auto;width:auto;flex-direction:row;padding:6px 8px calc(6px + env(safe-area-inset-bottom));z-index:40}
+  .side .logo,.side .spacer,.side .foot{display:none}
+  .nav{flex-direction:row;flex:1;gap:2px}
+  .nav button{flex-direction:column;gap:3px;font-size:12px;padding:8px 4px;justify-content:center;align-items:center}
+  .nav .count{position:absolute;top:2px;right:calc(50% - 22px);margin:0;padding:0 6px}
+  .top{padding:18px 16px 4px}.top h1{font-size:23px}#who{display:none}
+  #app{padding:12px 16px 100px}
+  .g-charts,.g-2{grid-template-columns:minmax(0,1fr)}
+  .auth{grid-template-columns:1fr;margin:0}.auth .promo{min-height:0;padding:28px}.auth .promo h2{font-size:26px}.auth .forms{padding:24px}
+}
+@media (max-width:620px){.g-stats3{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:520px){.seg{display:flex;flex-wrap:nowrap}.seg button{flex:1;padding:8px 4px;font-size:14px}.g-stats{grid-template-columns:minmax(0,1fr)}.card{padding:18px}.part input.pv{width:100px}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="side" aria-label="Main navigation">
+    <div class="logo"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#d6527c"/><path d="M16 2a14 14 0 0 1 0 28z" fill="#f6c453"/></svg>X-Split<b>|</b></div>
+    <nav class="nav" id="nav"></nav>
+    <div class="spacer"></div>
+    <div class="foot">© 2026 X-Split · Team 9</div>
+  </aside>
+  <div class="main">
+    <header class="top">
+      <h1 id="title">X-Split</h1>
+      <button class="iconbtn" id="bell" aria-label="Invitations" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="dot" id="bellDot" hidden></span></button>
+      <button class="me" id="meBtn" aria-label="Your profile" hidden><span class="avatar" id="avatar"></span><span id="who"></span></button>
+    </header>
+    <main id="app" tabindex="-1"></main>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="config.js"></script>
+<script>
+window.addEventListener('unhandledrejection',e=>e.preventDefault());
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const app = $('#app');
+const API = (window.XSPLIT_API||'').replace(/\/+$/,'');
+let META = {currencies:[], categories:[]}, ME = null, G = null, TAB = 'overview', VIEW = 'home', HOME_CUR = null;
+
+/* ---------------- icons ---------------- */
+const I = {
+  home:'<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  groups:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.4c2.1.8 3.5 2.8 3.5 5.6"/>',
+  friends:'<circle cx="10" cy="8" r="3.5"/><path d="M3.5 20c0-3.6 2.9-6 6.5-6 1.6 0 3 .5 4.1 1.3"/><path d="M19 14v6M16 17h6"/>',
+  profile:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
+  logout:'<path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4"/><path d="M10 17l5-5-5-5M15 12H3"/>',
+  arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>', plus:'<path d="M12 5v14M5 12h14"/>',
+  wallet:'<path d="M3 7a2 2 0 0 1 2-2h13v4"/><path d="M3 7v11a2 2 0 0 0 2 2h15V9H5a2 2 0 0 1-2-2"/><circle cx="16" cy="14.5" r="1.2"/>',
+  bag:'<path d="M5 8h14l-1 12H6z"/><path d="M9 8a3 3 0 0 1 6 0"/>',
+  scale:'<path d="M12 3v18M5 21h14M6 7h12M6 7l-3 7a3 3 0 0 0 6 0zM18 7l-3 7a3 3 0 0 0 6 0z"/>',
+  chart:'<path d="M5 20V10M12 20V4M19 20v-7"/>', receipt:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
+  camera:'<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+  globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+};
+const ico = (n, sw=1.8) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[n]}</svg>`;
+
+/* ---------------- helpers ---------------- */
+function toast(msg, bad){const t=$('#toast');t.textContent=msg;t.className='toast'+(bad?' err':'');t.style.display='block';clearTimeout(toast._t);toast._t=setTimeout(()=>t.style.display='none',3800)}
+const call = (path, opts={}) => fetch(API+'/api'+path, {credentials:'include', ...opts});
+const guestUrl = link => location.origin+location.pathname+'#guest='+link.split('/').pop();
+async function api(path, opts={}){
+  if(opts.body && !(opts.body instanceof FormData)){opts.headers={'Content-Type':'application/json'};opts.body=JSON.stringify(opts.body)}
+  try{
+    const r = await call(path, opts); const j = await r.json().catch(()=>({}));
+    if(!r.ok){ if(r.status===401 && ME){ME=null;renderAuth()} throw new Error(j.error||'Something went wrong') }
+    return j;
+  }catch(e){ toast(e.message || 'Network error', true); throw e }
+}
+const fmt = n => Math.abs(+n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const big = (n,c) => `${(+n<-0.004)?'-':''}${fmt(n)}<small>${c}</small>`;
+const money = (n,c='') => ((+n<-0.004)?'-':'')+fmt(n)+(c?' '+c:'');
+const cls = n => n>0.004?'pos':(n<-0.004?'neg':'');
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const initials = s => String(s||'?').replace(/\(guest\)/,'').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
+const balanceText = (n,c,you) => n>0.004?`${you?'You are':'is'} owed ${money(n,c)}`:n<-0.004?`${you?'You':''} owe${you?'':'s'} ${money(-n,c)}`:'Settled up';
+const today = () => new Date().toISOString().slice(0,10);
+const niceDate = d => { const x=new Date(d+'T00:00:00'); return isNaN(x)?esc(d):x.toLocaleDateString(undefined,{day:'numeric',month:'short'}) };
+const empty = (title, text, action='') => `<div class="empty"><b>${title}</b>${text}${action?`<div style="margin-top:14px">${action}</div>`:''}</div>`;
+const PALETTE = ['#c8456f','#f6c453','#ee8a72','#7a3156','#3f8f8c','#8a8a96'];
+
+/* ---------------- charts ---------------- */
+function barChart(items, unit){
+  if(!items.length || !items.some(i=>i.value>0)) return empty('No spending yet','Bars appear here once expenses are added.');
+  const max = Math.max(...items.map(i=>i.value)); const step = niceStep(max/4), top = step*4;
+  const lines = [0,1,2,3,4].map(k=>`<div class="grid-l" style="bottom:${k*25}%"><span>${short(step*k)}</span></div>`).join('');
+  return `<div class="chart-pad"><div class="bars" role="img" aria-label="Bar chart: ${items.map(i=>esc(i.label)+' '+fmt(i.value)+' '+unit).join(', ')}">${lines}
+    ${items.map(i=>`<div class="col" title="${esc(i.label)}: ${fmt(i.value)} ${unit}"><span class="val">${short(i.value)}</span><div class="bar" style="height:${Math.max(1.5,i.value/top*100)}%"></div><span class="lbl">${esc(i.label)}</span></div>`).join('')}</div></div>`;
+}
+function niceStep(x){ if(x<=0) return 1; const p=Math.pow(10,Math.floor(Math.log10(x))); const f=x/p; return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p }
+function short(n){ n=+n; return n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e4?Math.round(n/1e3)+'k':n>=1e3?(n/1e3).toFixed(1)+'k':(Math.round(n*10)/10).toString() }
+function donut(items, unit, centerLabel){
+  const total = items.reduce((a,i)=>a+i.value,0);
+  if(!total) return empty('Nothing to show yet','Add an expense to see the breakdown.');
+  const R=70, C=2*Math.PI*R; let off=0;
+  const segs = items.map((i,k)=>{ const len=i.value/total*C; const s=`<circle r="${R}" cx="95" cy="95" fill="none" stroke="${PALETTE[k%PALETTE.length]}" stroke-width="24" stroke-dasharray="${Math.max(len-2,0.5)} ${C}" stroke-dashoffset="${-off}" transform="rotate(-90 95 95)"/>`; off+=len; return s }).join('');
+  const topPct = Math.round(items[0].value/total*100);
+  return `<svg class="donut" viewBox="0 0 190 190" role="img" aria-label="${esc(centerLabel)}: ${items.map(i=>esc(i.label)+' '+Math.round(i.value/total*100)+'%').join(', ')}">
+      <circle r="${R}" cx="95" cy="95" fill="none" stroke="#f0f0f4" stroke-width="24"/>${segs}
+      <text x="95" y="92" text-anchor="middle" font-size="28" font-weight="700" fill="#18181d">${topPct}%</text>
+      <text x="95" y="114" text-anchor="middle" font-size="13" fill="#62626e">${esc(items[0].label)}</text></svg>
+    <div class="list legend">${items.map((i,k)=>`<div class="li"><span class="sw" style="background:${PALETTE[k%PALETTE.length]}"></span><div class="grow"><div class="t" style="font-weight:600">${esc(i.label)}</div><div class="small mute">${fmt(i.value)} ${unit}</div></div><b style="flex:none">${Math.round(i.value/total*100)}%</b></div>`).join('')}</div>`;
+}
+
+/* ---------------- shell & navigation ---------------- */
+const NAV = [['home','Home','home'],['groups','Groups','groups'],['friends','Friends','friends'],['profile','Profile','profile']];
+function showShell(){
+  document.body.classList.remove('bare');
+  $('#nav').innerHTML = NAV.map(([v,l,i])=>`<button data-v="${v}">${ico(i)}<span>${l}</span>${v==='groups'?'<span class="count" id="invCount" hidden></span>':''}</button>`).join('')+
+    `<button id="logout">${ico('logout')}<span>Log out</span></button>`;
+  $$('#nav [data-v]').forEach(b=>b.onclick=()=>go(b.dataset.v));
+  $('#logout').onclick=async()=>{await api('/logout',{method:'POST'});ME=null;renderAuth()};
+  $('#bell').hidden=$('#meBtn').hidden=false;
+  $('#who').textContent=ME.full_name; $('#avatar').textContent=initials(ME.full_name);
+}
+function setNav(v, title){
+  VIEW=v; $$('#nav [data-v]').forEach(b=>b.setAttribute('aria-current', b.dataset.v===v?'page':'false'));
+  $('#title').textContent=title; document.title=title+' · X-Split'; window.scrollTo(0,0);
+}
+async function refreshInvites(){
+  try{ const inv = await api('/invitations'); const n=inv.length;
+    $('#bellDot').hidden=!n; const c=$('#invCount'); if(c){c.hidden=!n; c.textContent=n}
+    $('#bell').setAttribute('aria-label', n?`${n} invitation${n>1?'s':''}`:'No invitations'); return inv;
+  }catch(e){ return [] }
+}
+function go(v){ ({home:renderHome, groups:renderGroups, friends:renderFriends, profile:renderProfile})[v]() }
+$('#bell').onclick=()=>go('groups'); $('#meBtn').onclick=()=>go('profile');
+
+/* ---------------- auth ---------------- */
+function renderAuth(mode='login'){
+  document.body.classList.add('bare'); $('#bell').hidden=$('#meBtn').hidden=true; document.title='X-Split';
+  app.innerHTML = `<div class="auth">
+    <div class="promo"><div><div class="logo" style="padding:0 0 26px">${$('.logo svg').outerHTML}X-Split</div>
+      <h2>Travel together.<br>Split costs in any currency.</h2></div>
+      <ul><li>Record expenses in 11 currencies, converted automatically</li><li>Equal, exact or percentage splits</li><li>Scan receipts to fill in the total</li><li>Settle up with the fewest payments</li></ul></div>
+    <div class="forms"><div class="seg" role="tablist"><button role="tab" data-m="login" aria-selected="${mode==='login'}">Log in</button><button role="tab" data-m="register" aria-selected="${mode==='register'}">Create account</button></div>
+      <form id="af" style="margin-top:8px" novalidate>${mode==='login'?`
+        <label for="le">Email</label><input id="le" type="email" autocomplete="email" required>
+        <label for="lp">Password</label><input id="lp" type="password" autocomplete="current-password" required>
+        <button class="btn btn-dark btn-block" style="margin-top:22px">Log in</button>
+        <p class="mute small" style="margin-top:14px">New here? <a href="#" data-m="register">Create an account</a></p>`:`
+        <label for="rn">Full name</label><input id="rn" autocomplete="name" required>
+        <label for="re">Email</label><input id="re" type="email" autocomplete="email" required>
+        <label for="rp">Password</label><input id="rp" type="password" autocomplete="new-password" minlength="6" required><p class="hint">At least 6 characters.</p>
+        <button class="btn btn-dark btn-block" style="margin-top:22px">Create account</button>
+        <p class="mute small" style="margin-top:14px">Already have an account? <a href="#" data-m="login">Log in</a></p>`}
+      </form></div></div>`;
+  $$('[data-m]').forEach(b=>b.onclick=e=>{e.preventDefault();renderAuth(b.dataset.m)});
+  $('#af').onsubmit=async e=>{ e.preventDefault(); const b=$('#af button'); b.disabled=true;
+    try{ if(mode==='login') await api('/login',{method:'POST',body:{email:$('#le').value,password:$('#lp').value}});
+         else await api('/register',{method:'POST',body:{full_name:$('#rn').value,email:$('#re').value,password:$('#rp').value}});
+         boot() }catch(err){ b.disabled=false } };
+  (mode==='login'?$('#le'):$('#rn')).focus();
+}
+
+/* ---------------- home (personal dashboard, FR30) ---------------- */
+async function renderHome(){
+  setNav('home','Dashboard');
+  const [d, inv] = await Promise.all([api('/me/dashboard'+(HOME_CUR?'?currency='+HOME_CUR:'')), refreshInvites()]);
+  const t=d.totals, cur=t.currency; HOME_CUR=cur;
+  const cta = inv.length ? `<button class="card cta" id="ctaInv">You have ${inv.length} group invitation${inv.length>1?'s':''}! ${ico('arrow')}</button>`
+                         : `<button class="card cta" id="ctaNew">Start a new trip or group ${ico('arrow')}</button>`;
+  app.innerHTML = `
+  <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px">
+    <p class="mute" style="flex:1 1 260px">Hi ${esc(ME.full_name.split(' ')[0])}! Here's everything across your ${d.groups.length} group${d.groups.length===1?'':'s'}.</p>
+    <div style="flex:0 0 auto;display:flex;align-items:center;gap:8px"><label for="tc" style="margin:0">Show totals in</label><select id="tc" style="width:auto;min-height:40px;padding:6px 10px">${META.currencies.map(c=>`<option ${c.code===cur?'selected':''}>${c.code}</option>`).join('')}</select></div>
+  </div>
+  <div class="grid g-main">
+   <div class="stack">
+    <div class="grid g-stats3">
+      <div class="card stat"><span class="ic">${ico('wallet')}</span><div style="min-width:0"><div class="k">You paid</div><div class="v">${big(t.paid,cur)}</div></div></div>
+      <div class="card stat"><span class="ic">${ico('bag')}</span><div style="min-width:0"><div class="k">Your spending</div><div class="v">${big(t.share,cur)}</div></div></div>
+      <div class="card stat"><span class="ic">${ico('scale')}</span><div style="min-width:0"><div class="k">${t.net>0.004?'You are owed':t.net<-0.004?'You owe':'Balance'}</div><div class="v ${cls(t.net)}">${t.net>0.004||t.net<-0.004?big(Math.abs(t.net),cur):'All settled'}</div></div></div>
+    </div>
+    ${d.not_converted.length?`<p class="hint bad">Not included in totals (exchange rate unavailable): ${d.not_converted.map(esc).join(', ')}</p>`:''}
+    <div class="grid g-charts">
+      <div class="card"><div class="card-h"><h2>Your spending by group</h2><span class="pill">${cur}</span></div>
+        ${barChart(d.groups.filter(g=>g.share_converted!=null).slice(0,8).map(g=>({label:g.group_name,value:g.share_converted})), cur)}</div>
+      <div class="card"><div class="card-h"><h2>Where it goes</h2><span class="pill">${cur}</span></div>
+        ${donut(d.by_category.map(c=>({label:c.category,value:c.total})), cur, 'Spending by category')}</div>
+    </div>
+    <div class="card"><div class="card-h"><h2>My groups <span class="pill yellow">${d.groups.length}</span></h2><button class="btn btn-dark btn-sm" id="newGroup">${ico('plus')} New group</button></div>
+      ${d.groups.length?`<div class="list">${d.groups.map(groupRow).join('')}</div>`:empty('No groups yet','Create a group for your next trip, then add friends or guests.')}</div>
+   </div>
+   <div class="stack">
+    ${cta}
+    <div class="card"><div class="card-h"><h2>Recent expenses</h2></div>
+      ${d.recent.length?`<div class="list timeline">${d.recent.map(r=>`<div class="li"><span class="when">${niceDate(r.expense_date)}</span><div class="what"><div class="k">${esc(r.group_name)} · ${esc(r.category)}</div><div class="t">${esc(r.description)}</div><div class="small mute">${money(r.amount,r.currency)} · paid by ${esc(r.paid_by_name)}</div></div></div>`).join('')}</div>`
+        :empty('No expenses yet','Open a group and add the first one.')}
+      <button class="btn btn-line btn-block mt" id="allGroups">All groups</button></div>
+    <div class="card promo"><h2>Settle up with the fewest payments</h2><p>X-Split works out who should pay whom, so everyone is square with the smallest number of transfers.</p>
+      <button class="btn btn-accent btn-block" id="promoBtn">${d.groups.length?'See who owes what':'Create your first group'}</button></div>
+   </div>
+  </div>`;
+  $('#tc').onchange=()=>{HOME_CUR=$('#tc').value;renderHome()};
+  if($('#ctaInv')) $('#ctaInv').onclick=()=>go('groups');
+  if($('#ctaNew')) $('#ctaNew').onclick=()=>{go('groups');setTimeout(()=>$('#gn')?.focus(),300)};
+  $('#allGroups').onclick=()=>go('groups');
+  $('#newGroup').onclick=()=>{go('groups');setTimeout(()=>$('#gn')?.focus(),300)};
+  $('#promoBtn').onclick=()=>d.groups.length?openGroup(d.groups.find(g=>Math.abs(g.net)>0.004)?.group_id||d.groups[0].group_id,'balances'):go('groups');
+  bindGroupRows();
+}
+const groupRow = g => `<div class="li"><span class="badge">${esc(initials(g.group_name))}</span>
+  <div class="grow"><div class="t">${esc(g.group_name)} <span class="pill">${g.base_currency}</span> ${g.status==='Completed'?'<span class="pill ok">Closed</span>':''}</div>
+  <div class="small ${cls(g.net)||'mute'}">${balanceText(g.net,g.base_currency,true)}</div></div>
+  <button class="btn btn-line btn-sm" data-open="${g.group_id}">Open</button></div>`;
+const bindGroupRows = () => $$('[data-open]').forEach(b=>b.onclick=()=>openGroup(+b.dataset.open));
+
+/* ---------------- groups ---------------- */
+async function renderGroups(){
+  setNav('groups','Groups');
+  const [d, inv] = await Promise.all([api('/me/dashboard'), refreshInvites()]);
+  app.innerHTML = `${inv.length?`<div class="card" style="border:2px solid var(--yellow);margin-bottom:20px"><div class="card-h"><h2>Invitations</h2><span class="pill yellow">${inv.length} waiting</span></div>
+      <div class="list">${inv.map(i=>`<div class="li"><span class="badge">${esc(initials(i.group_name))}</span><div class="grow"><div class="t">${esc(i.group_name)} <span class="pill">${i.base_currency}</span></div><div class="small mute">Invited by ${esc(i.invited_by_name||'a member')}</div></div>
+        <button class="btn btn-dark btn-sm" data-acc="${i.member_id}">Accept</button><button class="btn btn-soft btn-sm" data-dec="${i.member_id}">Decline</button></div>`).join('')}</div></div>`:''}
+    <div class="grid g-main">
+      <div class="card"><div class="card-h"><h2>Your groups</h2></div>${d.groups.length?`<div class="list">${d.groups.map(groupRow).join('')}</div>`:empty('No groups yet','Create one on the right. You become its admin and can invite people.')}</div>
+      <form class="card" id="gf"><h2>Create a group</h2><p class="mute small" style="margin-top:4px">One group per trip or shared event.</p>
+        <label for="gn">Group name</label><input id="gn" placeholder="e.g. Europe Trip" maxlength="80" required>
+        <label for="gc">Base currency</label><select id="gc">${META.currencies.map(c=>`<option value="${c.code}">${c.code} · ${esc(c.name)}</option>`).join('')}</select>
+        <p class="hint">Every expense is converted into this currency. You can change it later.</p>
+        <button class="btn btn-dark btn-block mt">${ico('plus')} Create group</button></form>
+    </div>`;
+  bindGroupRows();
+  $('#gf').onsubmit=async e=>{e.preventDefault(); const r=await api('/groups',{method:'POST',body:{group_name:$('#gn').value,base_currency:$('#gc').value}}); toast('Group created'); openGroup(r.group_id,'members')};
+  $$('[data-acc]').forEach(b=>b.onclick=async()=>{const r=await api(`/invitations/${b.dataset.acc}/accept`,{method:'POST'});toast('You joined the group');refreshInvites();openGroup(r.group_id)});
+  $$('[data-dec]').forEach(b=>b.onclick=async()=>{if(!confirm('Decline this invitation?'))return;await api(`/invitations/${b.dataset.dec}/decline`,{method:'POST'});toast('Invitation declined');renderGroups()});
+}
+
+/* ---------------- one group ---------------- */
+async function openGroup(id, tab='overview'){ G = await api('/groups/'+id); TAB=tab; renderGroup() }
+const TABS = {overview:'Overview', expenses:'Expenses', balances:'Balances & settle', members:'Members'};
+async function renderGroup(editEx, scan){
+  G = await api('/groups/'+G.group_id);
+  setNav('groups', G.group_name);
+  const open = G.status!=='Completed';
+  app.innerHTML = `<div class="ghead"><div class="grow"><button class="btn btn-soft btn-sm" id="back">← All groups</button>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px"><span class="pill pink">${G.base_currency} base</span><span class="pill">${G.members.length} member${G.members.length===1?'':'s'}</span>${open?'':'<span class="pill ok">Closed</span>'}${G.is_admin?'<span class="pill">You are admin</span>':''}</div></div>
+      ${open&&TAB!=='add'?`<div style="display:flex;gap:10px;flex-wrap:wrap"><label class="btn btn-line" for="scanFile" tabindex="0" role="button">${ico('camera')} Scan receipt</label><input type="file" id="scanFile" accept="image/*" hidden>
+        <button class="btn btn-accent" id="addBtn">${ico('plus',2.2)} Add expense</button></div>`:''}</div>
+    <div class="tabs" role="tablist">${Object.entries(TABS).map(([k,l])=>`<button role="tab" data-t="${k}" aria-selected="${k===TAB}">${l}</button>`).join('')}${TAB==='add'?`<button role="tab" aria-selected="true">${editEx?'Edit expense':'New expense'}</button>`:''}</div>
+    <div id="tab"></div>`;
+  $('#back').onclick=()=>go('groups');
+  if($('#addBtn')) $('#addBtn').onclick=()=>{TAB='add';renderGroup()};
+  if($('#scanFile')){ const lab=$('label[for=scanFile]'); lab.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('#scanFile').click()}};
+    $('#scanFile').onchange=async()=>{ const f=$('#scanFile').files[0]; if(!f) return; TAB='add'; renderGroup(null, {file:f, ocr:await readReceipt(f)}) } }
+  $$('[data-t]').forEach(b=>b.onclick=()=>{TAB=b.dataset.t;renderGroup()});
+  ({overview:tabOverview,expenses:tabExpenses,add:()=>tabAdd(editEx,scan),balances:tabBalances,members:tabMembers})[TAB]();
+}
+async function readReceipt(file){
+  busy(true,'Reading your receipt…','Finding the shop, date, total and items. This can take a few seconds.');
+  try{ const fd=new FormData(); fd.append('receipt',file); const r=await call('/ocr',{method:'POST',body:fd}); const j=await r.json().catch(()=>({}));
+    return r.ok ? j : {error:j.error||'Could not read the receipt.'} }
+  catch(e){ return {error:'Could not reach the server to read the receipt.'} }
+  finally{ busy(false) }
+}
+function busy(on, title='', text=''){
+  let b=$('#busy'); if(!b){ b=document.createElement('div'); b.id='busy'; b.className='busy'; b.setAttribute('role','status'); document.body.appendChild(b) }
+  b.innerHTML=`<div class="card"><div class="spin" aria-hidden="true"></div><h2>${esc(title)}</h2><p class="mute">${esc(text)}</p></div>`; b.hidden=!on;
+}
+
+/* Overview (FR29, FR31) */
+async function tabOverview(){
+  const d = await api(`/groups/${G.group_id}/dashboard`), c=d.base_currency;
+  const mine = d.by_participant.find(p=>p.member_id===G.my_member_id) || {paid:0,spent:0,net:0};
+  if(!d.expense_count){ $('#tab').innerHTML=`<div class="card">${empty('No expenses yet','Add the first expense and the charts, totals and balances will appear here.', G.status!=='Completed'?`<button class="btn btn-accent" id="firstAdd">${ico('plus',2.2)} Add the first expense</button>`:'')}</div>`;
+    if($('#firstAdd')) $('#firstAdd').onclick=()=>{TAB='add';renderGroup()}; return }
+  const maxPaid = Math.max(1,...d.by_participant.map(p=>p.paid));
+  $('#tab').innerHTML = `<div class="grid g-stats">
+      <div class="card stat"><span class="ic">${ico('chart')}</span><div><div class="k">Total spent</div><div class="v">${big(d.total_spent,c)}</div></div></div>
+      <div class="card stat"><span class="ic">${ico('receipt')}</span><div><div class="k">Expenses</div><div class="v">${d.expense_count}</div></div></div>
+      <div class="card stat"><span class="ic">${ico('bag')}</span><div><div class="k">Your spending</div><div class="v">${big(mine.spent,c)}</div></div></div>
+      <div class="card stat"><span class="ic">${ico('scale')}</span><div><div class="k">${mine.net>0.004?'You are owed':mine.net<-0.004?'You owe':'Your balance'}</div><div class="v ${cls(mine.net)}">${Math.abs(mine.net)>0.004?big(Math.abs(mine.net),c):'Settled'}</div></div></div></div>
+    <div class="grid g-charts mt">
+      <div class="card"><div class="card-h"><h2>Spending by day</h2><span class="pill">${c}</span></div>${barChart(d.by_day.map(x=>({label:niceDate(x.day),value:x.total})), c)}</div>
+      <div class="card"><div class="card-h"><h2>By category</h2></div>${donut(d.by_category.map(x=>({label:x.category,value:x.total})), c, 'Spending by category')}</div></div>
+    <div class="grid g-main mt">
+      <div class="card"><div class="card-h"><h2>By participant</h2></div><div class="scroll"><table><tr><th>Member</th><th style="width:30%">Paid</th><th class="num">Spent</th><th class="num">Balance</th></tr>
+        ${d.by_participant.map(p=>`<tr><td><b>${esc(p.name)}</b>${p.member_id===G.my_member_id?' <span class="pill">you</span>':''}</td><td><div class="small">${money(p.paid,c)}</div><div class="prog" style="margin-top:6px"><i style="width:${p.paid/maxPaid*100}%"></i></div></td><td class="num">${money(p.spent)}</td><td class="num ${cls(p.net)}">${p.net>0.004?'+':''}${money(p.net)}</td></tr>`).join('')}</table></div></div>
+      <div class="stack">
+        <div class="card"><div class="card-h"><h2>To settle</h2></div>${d.suggested_settlements.length?`<div class="list">${d.suggested_settlements.map(settleRow).join('')}</div><button class="btn btn-line btn-block mt" id="goSettle">Settle up</button>`:empty('Everyone is settled up','No payments needed.')}</div>
+        <div class="card"><div class="card-h"><h2>By currency</h2></div><div class="list">${d.by_currency.map(x=>`<div class="li"><span class="badge">${x.currency}</span><div class="grow"><div class="t">${money(x.original_total,x.currency)}</div><div class="small mute">${x.count} expense${x.count>1?'s':''}</div></div><b>${money(x.base_total,c)}</b></div>`).join('')}</div></div>
+      </div></div>`;
+  if($('#goSettle')) $('#goSettle').onclick=()=>{TAB='balances';renderGroup()};
+}
+const settleRow = s => `<div class="li"><span class="badge">${esc(initials(s.from_name))}</span><div class="grow"><div class="t">${esc(s.from_name)}</div><div class="small mute">pays ${esc(s.to_name)}</div></div><b>${money(s.amount)}</b></div>`;
+
+/* Expenses (FR21-23) */
+function expenseTable(list, base, canEdit){
+  if(!list.length) return empty('No expenses yet','Use “Add expense” to record the first one.');
+  return `<div class="scroll"><table class="exp"><tr><th>Date</th><th>Description</th><th>Paid by</th><th class="num">Amount</th><th class="num">In ${base}</th><th>Split</th>${canEdit?'<th></th>':''}</tr>`+
+  list.map(e=>`<tr><td class="c-date" style="white-space:nowrap">${niceDate(e.expense_date)}</td>
+    <td class="c-desc"><b>${esc(e.description)}</b><div class="tags"><span class="pill">${esc(e.category)}</span>${e.receipt_url?`<a class="pill pink" href="#" data-receipt="${esc(e.receipt_url)}" style="text-decoration:none">🧾 Receipt</a>`:''}</div></td>
+    <td class="c-meta">${niceDate(e.expense_date)} · paid by ${esc(e.paid_by_name)}${e.currency!==base?` · ${money(e.amount,e.currency)}`:''}</td>
+    <td class="c-payer">${esc(e.paid_by_name)}</td><td class="num c-amt">${money(e.amount,e.currency)}</td>
+    <td class="num c-base"><b>${money(e.amount_base)}</b><span class="m-cur"> ${base}</span>${e.currency!==base?`<div class="small mute">rate ${(+e.exchange_rate_used).toFixed(4)} · ${esc(e.rate_source)}</div>`:''}</td>
+    <td class="exp-split c-split">${e.splits.map(s=>esc(s.name)+': '+money(s.share_base)).join('<br>')}</td>
+    ${!canEdit?'':(G.is_admin||e.paid_by===G.my_member_id)?`<td class="c-act" style="white-space:nowrap"><button class="btn btn-line btn-sm" data-edit="${e.expense_id}">Edit</button> <button class="btn btn-danger btn-sm" data-del="${e.expense_id}" aria-label="Delete ${esc(e.description)}">Delete</button></td>`:'<td class="c-act"></td>'}</tr>`).join('')+'</table></div>';
+}
+let EXPENSES = [];
+async function tabExpenses(){
+  EXPENSES = await api(`/groups/${G.group_id}/expenses`);
+  const total = EXPENSES.reduce((a,e)=>a+e.amount_base,0);
+  $('#tab').innerHTML = `<div class="card"><div class="card-h"><h2>Expense history</h2><span class="mute">${EXPENSES.length} expense${EXPENSES.length===1?'':'s'} · ${money(total,G.base_currency)}</span></div>${expenseTable(EXPENSES,G.base_currency,G.status!=='Completed')}</div>`;
+  $$('[data-del]').forEach(b=>b.onclick=async()=>{ if(confirm('Delete this expense? Balances will be recalculated.')){await api('/expenses/'+b.dataset.del,{method:'DELETE'});toast('Expense deleted');tabExpenses()}});
+  $$('[data-edit]').forEach(b=>b.onclick=()=>{TAB='add';renderGroup(EXPENSES.find(e=>e.expense_id==b.dataset.edit))});
+}
+
+/* Add / edit expense (FR10-20) */
+function tabAdd(ex, scan){
+  if(G.status==='Completed'){ $('#tab').innerHTML=`<div class="card">${empty('This group is closed','Closed groups are read-only.')}</div>`; return }
+  const mem = G.members, base=G.base_currency, everyone=()=>new Set(mem.map(m=>m.member_id));
+  $('#tab').innerHTML = `${scan?`<div class="banner ${scan.ocr.error?'warn':''}" id="scanBanner"></div>`:''}<form class="grid g-main" id="xf" novalidate>
+   <div class="card"><h2>${ex?'Edit expense':'New expense'}</h2>
+    <div class="row"><div style="flex:2"><label for="xd">Description</label><input id="xd" maxlength="120" placeholder="e.g. Dinner in Rome" required></div>
+      <div><label for="xc">Category</label><select id="xc">${META.categories.map(c=>`<option>${c}</option>`).join('')}</select></div></div>
+    <div class="row"><div><label for="xa">Total amount</label><input id="xa" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00" required></div>
+      <div><label for="xcur">Currency</label><select id="xcur">${META.currencies.map(c=>`<option value="${c.code}" ${c.code===base?'selected':''}>${c.code} · ${esc(c.name)}</option>`).join('')}</select></div>
+      <div><label for="xdt">Date</label><input id="xdt" type="date" value="${today()}"></div></div>
+    <div class="row" id="rateRow"><div><label for="xrate">Exchange rate to ${base}</label><input id="xrate" type="number" inputmode="decimal" step="0.000001"><p class="hint" id="rsrc"></p></div>
+      <div><label for="xconv">Converted amount</label><input id="xconv" disabled></div></div>
+    <label for="xp">Paid by</label><select id="xp">${mem.map(m=>`<option value="${m.member_id}" ${m.member_id===G.my_member_id?'selected':''}>${esc(m.name)}${m.member_id===G.my_member_id?' (you)':''}</option>`).join('')}</select>
+    <label>How should it be split?</label>
+    <div class="seg seg4" role="tablist" id="xs"><button type="button" role="tab" data-s="equal">Equally</button><button type="button" role="tab" data-s="item">By item</button><button type="button" role="tab" data-s="unequal">Exact amounts</button><button type="button" role="tab" data-s="percent">Percentages</button></div>
+    <div id="whoRow" style="display:flex;align-items:center;gap:8px;margin-top:18px"><b style="flex:1">Who shares this expense?</b><button type="button" class="btn btn-soft btn-sm" id="selAll">Everyone</button><button type="button" class="btn btn-soft btn-sm" id="selNone">Nobody</button></div>
+    <div id="parts"></div>
+    <div id="itemsBox" hidden><p class="mute small" style="margin-top:14px">Tick who had each item. Shared items are split between the people ticked. Tax, service or cover charges (the difference to the total) are shared in proportion to what each person had.</p>
+      <div id="items"></div><button type="button" class="btn btn-soft btn-sm mt" id="addItem">${ico('plus')} Add item</button></div>
+    <p class="hint" id="sumhint"></p>
+   </div>
+   <div class="stack">
+    <div class="card"><h2>Receipt</h2><p class="mute small" style="margin-top:4px">${ex&&ex.receipt_url?'Upload a new image to replace the current receipt. Leave empty to keep it.':'Optional. Upload a photo and we fill in the details for you.'}</p>
+      <label for="xr">Receipt image or PDF</label><input type="file" id="xr" accept="image/*,.pdf"><p class="hint" id="ocrmsg"></p></div>
+    <div class="card"><h2>Who pays what</h2><div class="list" id="sum" style="margin-top:8px"></div>
+      <button class="btn btn-dark btn-block mt" id="xsave">${ex?'Save changes':'Save expense'}</button>
+      <button type="button" class="btn btn-soft btn-block" style="margin-top:10px" id="xcancel">Cancel</button></div>
+   </div></form>`;
+  let split='equal', rateEdited=!!ex, ITEMS=[], scanFile=scan&&scan.file;
+  const sel = () => $$('.pc:checked').map(c=>+c.value);
+  const amount = () => +$('#xa').value||0;
+  const itemTotal = () => ITEMS.reduce((a,it)=>a+(+it.price||0),0);
+  const shares = () => {
+    const out = new Map(); const total = amount() || (split==='item'?itemTotal():0);
+    if(split==='item'){ const w=new Map(); ITEMS.forEach(it=>{ const n=it.members.size; if(n&&+it.price>0) it.members.forEach(m=>w.set(m,(w.get(m)||0)+(+it.price)/n)) });
+      const W=[...w.values()].reduce((a,b)=>a+b,0); w.forEach((v,m)=>out.set(m, W?total*v/W:0)) }
+    else { const ids=sel(); if(split==='equal') ids.forEach(m=>out.set(m, total/ids.length));
+      else ids.forEach(m=>{ const v=+($(`.pv[data-m="${m}"]`)?.value||0); out.set(m, split==='percent'?total*v/100:v) }) }
+    return out;
+  };
+  const drawSplit = (keep)=>{
+    $$('#xs button').forEach(b=>b.setAttribute('aria-selected', b.dataset.s===split));
+    const item = split==='item'; $('#itemsBox').hidden=!item; $('#whoRow').hidden=item; $('#parts').hidden=item;
+    if(item){ if(!ITEMS.length) ITEMS=[{name:'',price:'',members:everyone()}]; drawItems(); return }
+    const chosen = keep || (sel().length?sel():mem.map(m=>m.member_id));
+    $('#parts').innerHTML = mem.map(m=>`<label class="part ${chosen.includes(m.member_id)?'on':''}" style="margin:8px 0 0;font-weight:400"><input type="checkbox" class="pc" value="${m.member_id}" ${chosen.includes(m.member_id)?'checked':''}>
+      <span class="nm">${esc(m.name)}</span>${split==='equal'?'':`<input class="pv" data-m="${m.member_id}" type="number" inputmode="decimal" step="0.01" min="0" placeholder="${split==='percent'?'%':'0.00'}" aria-label="${split==='percent'?'Percentage':'Amount'} for ${esc(m.name)}">`}</label>`).join('');
+    $$('#parts input').forEach(i=>i.oninput=()=>{ if(i.classList.contains('pc')) i.closest('.part').classList.toggle('on',i.checked); hint() }); hint();
+  };
+  const drawItems = ()=>{
+    $('#items').innerHTML = ITEMS.map((it,i)=>`<div class="itm"><div class="itm-top">
+        <input class="iname" data-i="${i}" value="${esc(it.name)}" placeholder="Item ${i+1}" aria-label="Item ${i+1} name" maxlength="60">
+        <input class="iprice" data-i="${i}" type="number" inputmode="decimal" step="0.01" min="0" value="${esc(it.price)}" placeholder="0.00" aria-label="Price of item ${i+1}">
+        <button type="button" class="btn btn-soft btn-sm" data-rm="${i}" aria-label="Remove item ${i+1}">✕</button></div>
+      <div class="chips" role="group" aria-label="Who had ${esc(it.name||'item '+(i+1))}">${mem.map(m=>`<button type="button" class="chip" data-i="${i}" data-m="${m.member_id}" aria-pressed="${it.members.has(m.member_id)}">${esc(m.name.replace(' (guest)',''))}</button>`).join('')}
+        <button type="button" class="chip all" data-all="${i}">${it.members.size===mem.length?'Nobody':'Everyone'}</button></div></div>`).join('');
+    $$('.iname').forEach(x=>x.oninput=()=>{ITEMS[+x.dataset.i].name=x.value});
+    $$('.iprice').forEach(x=>x.oninput=()=>{ITEMS[+x.dataset.i].price=x.value; hint()});
+    $$('[data-rm]').forEach(b=>b.onclick=()=>{ITEMS.splice(+b.dataset.rm,1); if(!ITEMS.length) ITEMS=[{name:'',price:'',members:everyone()}]; drawItems()});
+    $$('.chip[data-m]').forEach(b=>b.onclick=()=>{const s=ITEMS[+b.dataset.i].members, m=+b.dataset.m; s.has(m)?s.delete(m):s.add(m); b.setAttribute('aria-pressed',s.has(m)); b.parentNode.querySelector('.all').textContent=s.size===mem.length?'Nobody':'Everyone'; hint()});
+    $$('[data-all]').forEach(b=>b.onclick=()=>{const it=ITEMS[+b.dataset.all]; it.members = it.members.size===mem.length?new Set():everyone(); drawItems()});
+    hint();
+  };
+  const hint = ()=>{
+    const h=$('#sumhint'), cur=$('#xcur').value; h.className='hint';
+    if(split==='item'){ const t=itemTotal(), a=amount(), diff=a-t, missing=ITEMS.filter(it=>+it.price>0&&!it.members.size).length,
+        noPrice=ITEMS.filter(it=>String(it.name||'').trim()&&!(+it.price>0)).length;
+      if(noPrice){ h.textContent=`${noPrice} item${noPrice>1?'s need':' needs'} a price (we couldn't read ${noPrice>1?'them':'it'}).`; h.className='hint bad'; $$('.iprice').forEach(x=>x.classList.toggle('need',String(ITEMS[+x.dataset.i].name||'').trim()!==''&&!(+x.value>0))) }
+      else if(!t){ h.textContent='Add the items and their prices.'; h.className='hint bad' }
+      else if(missing){ h.textContent=`${missing} item${missing>1?'s have':' has'} nobody ticked.`; h.className='hint bad' }
+      else if(!a){ h.textContent=`Items add up to ${fmt(t)} ${cur}. Leave the total empty to use this.`; h.className='hint good' }
+      else h.textContent = Math.abs(diff)<0.005 ? `Items add up to the total (${fmt(a)} ${cur}). ✓` : diff>0 ? `Items ${fmt(t)} + tax, service & other ${fmt(diff)} = ${fmt(a)} ${cur}, shared in proportion.` : `Items ${fmt(t)} − discount ${fmt(-diff)} = ${fmt(a)} ${cur}, shared in proportion.`;
+    } else { const ids=sel();
+      if(!ids.length){ h.textContent='Select at least one person.'; h.className='hint bad' }
+      else if(split==='equal') h.textContent=`${ids.length} ${ids.length===1?'person pays':'people each pay'} about ${fmt(amount()/ids.length)} ${cur}.`;
+      else { const s=$$('.pv').filter(i=>ids.includes(+i.dataset.m)).reduce((a,i)=>a+(+i.value||0),0), target=split==='percent'?100:amount(), left=target-s;
+        h.textContent = Math.abs(left)<0.005 ? `Adds up to ${split==='percent'?'100%':fmt(target)+' '+cur}. ✓` : `${split==='percent'?fmt(s)+'% of 100%':fmt(s)+' of '+fmt(target)+' '+cur} · ${left>0?fmt(left)+(split==='percent'?'%':'')+' left to assign':fmt(-left)+(split==='percent'?'%':'')+' too much'}`;
+        h.className = Math.abs(left)<0.005?'hint good':'hint bad' } }
+    summary();
+  };
+  const summary = ()=>{
+    const cur=$('#xcur').value, payer=mem.find(m=>m.member_id==$('#xp').value), sh=shares(), total=amount()||(split==='item'?itemTotal():0);
+    $('#sum').innerHTML = `<div class="li"><span class="grow mute">Total</span><b>${money(total,cur)}</b></div>
+      ${cur!==base?`<div class="li"><span class="grow mute">In ${base}</span><b>${money(total*(+$('#xrate').value||0),base)}</b></div>`:''}
+      <div class="li"><span class="grow mute">Paid by</span><b>${esc(payer?payer.name:'')}</b></div>
+      ${mem.filter(m=>sh.get(m.member_id)>0).map(m=>`<div class="li"><span class="badge" style="width:32px;height:32px;font-size:12px">${esc(initials(m.name))}</span><span class="grow">${esc(m.name)}</span><b>${money(sh.get(m.member_id),cur)}</b></div>`).join('')||'<p class="hint">Nobody is sharing this yet.</p>'}`;
+  };
+  const refreshRate = async()=>{
+    const cur=$('#xcur').value; $('#rateRow').hidden = cur===base;
+    if(cur===base){ $('#xrate').value=1; conv(); return }
+    $('#rsrc').textContent='Fetching the rate…';
+    try{ const dt=$('#xdt').value; const r=await api(`/rate?from=${cur}&to=${base}${dt&&dt<today()?'&date='+dt:''}`); $('#xrate').value=r.rate.toFixed(6);
+      $('#rsrc').textContent={live:'Live rate'+(dt&&dt<today()?' for '+niceDate(dt):''),cached:'Recent live rate',fallback:'Offline estimate. Edit it if you know the exact rate.','same-currency':''}[r.source]||r.source }
+    catch(e){ $('#rsrc').textContent='Rate service unavailable. Please type the rate.' } conv();
+  };
+  const conv = ()=>{ $('#xconv').value=(amount()*(+$('#xrate').value||0)).toFixed(2)+' '+base; hint() };
+  const applyOcr = async j => {
+    if(j.merchant && !$('#xd').value) $('#xd').value=j.merchant;
+    if(j.amount) $('#xa').value=j.amount;
+    if(j.currency) $('#xcur').value=j.currency;
+    if(j.date) $('#xdt').value=j.date;
+    if(j.category && j.category!=='Other' && META.categories.includes(j.category)) $('#xc').value=j.category;
+    if(j.items && j.items.length>=2){ ITEMS=j.items.map(it=>({name:it.name,price:it.price??'',members:everyone()})); split='item'; drawSplit() }
+    window._ocr={amount:j.amount,currency:j.currency}; await refreshRate();
+  };
+  const ocrSummary = j => [j.merchant&&'the shop', j.date&&'date', j.amount&&'total', j.items&&j.items.length>=2&&`${j.items.length} items`].filter(Boolean).join(', ');
+  $$('#xs button').forEach(b=>b.onclick=()=>{split=b.dataset.s;drawSplit()});
+  $('#selAll').onclick=()=>drawSplit(mem.map(m=>m.member_id)); $('#selNone').onclick=()=>drawSplit([]);
+  $('#addItem').onclick=()=>{ITEMS.push({name:'',price:'',members:everyone()}); drawItems(); $$('.iname').pop().focus()};
+  $('#xcur').onchange=refreshRate; $('#xdt').onchange=refreshRate; $('#xa').oninput=conv; $('#xrate').oninput=()=>{rateEdited=true;conv()}; $('#xp').onchange=summary;
+  $('#xcancel').onclick=()=>{TAB=ex?'expenses':'overview';renderGroup()};
+  window._ocr=null;
+  $('#xr').onchange = async()=>{
+    const f=$('#xr').files[0]; if(!f) return; scanFile=null; const m=$('#ocrmsg'); m.className='hint';
+    const j=await readReceipt(f);
+    if(j.error){ m.textContent=j.error+' The receipt will still be attached.'; return }
+    await applyOcr(j); m.className='hint good'; m.textContent=`Filled in ${ocrSummary(j)||'what we could read'}. Please check it matches the receipt.`;
+  };
+  $('#xf').onsubmit = async e=>{ e.preventDefault();
+    if(split==='item' && !amount() && itemTotal()) $('#xa').value=itemTotal().toFixed(2);
+    const parts = split==='item' ? [] : sel().map(id=>({member_id:id,value:split==='equal'?1:+($(`.pv[data-m="${id}"]`).value||0)}));
+    const items = split==='item' ? ITEMS.filter(it=>it.name.trim()||+it.price).map(it=>({name:it.name.trim(),price:+it.price,members:[...it.members]})) : undefined;
+    const data={description:$('#xd').value,category:$('#xc').value,amount:$('#xa').value,currency:$('#xcur').value,expense_date:$('#xdt').value,
+      paid_by:+$('#xp').value,split_type:split,participants:parts,items,manual_rate:$('#xcur').value===base||!rateEdited?null:$('#xrate').value,ocr:window._ocr};
+    if(!data.description.trim()){ $('#xd').focus(); return toast('Enter a description.', true) }
+    if(!(+data.amount>0)){ $('#xa').focus(); return toast('Enter an amount greater than zero.', true) }
+    if(split!=='item' && !parts.length) return toast('Select at least one person to share the expense.', true);
+    if(split==='item' && !items.length) return toast('Add at least one item.', true);
+    if(split==='item' && items.some(it=>!(it.price>0))) return toast('Every item needs a price.', true);
+    if(split==='item' && items.some(it=>!it.members.length)) return toast('Tick who had every item.', true);
+    const fd=new FormData(); fd.append('data',JSON.stringify(data)); const file=$('#xr').files[0]||scanFile; if(file) fd.append('receipt',file);
+    const b=$('#xsave'); b.disabled=true;
+    try{ if(ex) await api('/expenses/'+ex.expense_id,{method:'PUT',body:fd}); else await api(`/groups/${G.group_id}/expenses`,{method:'POST',body:fd}) }
+    catch(err){ b.disabled=false; return }
+    window._ocr=null; toast(ex?'Expense updated':'Expense saved'); TAB='expenses'; renderGroup();
+  };
+  if(ex){
+    $('#xd').value=ex.description||''; $('#xc').value=ex.category; $('#xa').value=ex.amount; $('#xcur').value=ex.currency; $('#xdt').value=ex.expense_date; $('#xp').value=ex.paid_by;
+    split = ex.split_type==='item'&&ex.items.length?'item':ex.split_type==='percent'||ex.splits.some(s=>s.percentage!=null)?'percent':(ex.split_type==='unequal'?'unequal':'equal');
+    ITEMS = (ex.items||[]).map(it=>({name:it.name,price:it.price,members:new Set(it.members)}));
+    drawSplit(ex.splits.map(s=>s.member_id));
+    if(split!=='item') ex.splits.forEach(s=>{const v=$(`.pv[data-m="${s.member_id}"]`); if(v) v.value=split==='percent'?s.percentage:s.share_original});
+    $('#rateRow').hidden = ex.currency===base; $('#xrate').value=ex.exchange_rate_used; $('#rsrc').textContent='Saved rate. Edit it to override.'; conv();
+  } else { drawSplit(mem.map(m=>m.member_id)); refreshRate(); if(!scan) $('#xd').focus() }
+  if(scan){
+    const j=scan.ocr, bn=$('#scanBanner');
+    if(j.error){ bn.innerHTML=`<b>We couldn't read this receipt automatically.</b> It is attached; please type the total and details.`; $('#xa').focus() }
+    else { applyOcr(j).then(()=>{ bn.innerHTML=`<b>✓ Read from your receipt:</b> ${esc(ocrSummary(j))}. ${split==='item'?'Tick who had each item, check the total, then save.':'Check the details, then save.'}` }) }
+    $('#ocrmsg').textContent=`Receipt attached: ${scan.file.name}`;
+  }
+}
+
+/* Balances & settle (FR24-28, FR32) */
+function balanceTable(bs,base,me){
+  return `<div class="list">${bs.map(b=>`<div class="li"><span class="badge">${esc(initials(b.name))}</span><div class="grow"><div class="t">${esc(b.name)}${b.member_id===me?' <span class="pill">you</span>':''}</div>
+    <div class="small mute">paid ${money(b.paid)} · share ${money(b.share)}</div></div><span class="${cls(b.net)||'mute'}" style="text-align:right">${balanceText(b.net,base,false)}</span></div>`).join('')}</div>`;
+}
+function historyList(st,base){
+  return st.length?`<div class="list">${st.map(s=>`<div class="li"><div class="grow"><div class="t">${esc(s.payer_name)} → ${esc(s.receiver_name)}</div><div class="small mute">${esc(String(s.settlement_date).slice(0,16))}${s.notes?' · '+esc(s.notes):''}</div></div><b>${money(s.amount_base,base)}</b></div>`).join('')}</div>`:empty('No payments yet','Payments you record appear here.');
+}
+function settleList(list,base){
+  return list.length?`<div class="list">${list.map(s=>`<div class="li"><div class="grow"><b>${esc(s.from_name)}</b> pays <b>${esc(s.to_name)}</b></div><b>${money(s.amount,base)}</b></div>`).join('')}</div>`:empty('Everyone is settled up 🎉','No payments needed.');
+}
+async function tabBalances(){
+  const [b, st] = await Promise.all([api(`/groups/${G.group_id}/balances`), api(`/groups/${G.group_id}/settlements`)]); const c=b.base_currency, open=G.status!=='Completed';
+  $('#tab').innerHTML = `<div class="grid g-main"><div class="stack">
+    <div class="card"><div class="card-h"><h2>Suggested payments</h2><span class="pill pink">fewest possible</span></div>
+      ${b.suggested_settlements.length?`<div class="list">${b.suggested_settlements.map(s=>`<div class="li"><span class="badge">${esc(initials(s.from_name))}</span><div class="grow"><div class="t">${esc(s.from_name)} pays ${esc(s.to_name)}</div><div class="small mute">${money(s.amount,c)}</div></div>
+        ${open?`<button class="btn btn-dark btn-sm" data-f="${s.from}" data-t="${s.to}" data-a="${s.amount}">Mark as paid</button>`:''}</div>`).join('')}</div>`:empty('Everyone is settled up 🎉', G.is_admin&&open?'You can close the group now.':'')}</div>
+    <div class="card"><div class="card-h"><h2>Balances</h2><span class="pill">${c}</span></div>${balanceTable(b.balances,c,G.my_member_id)}</div>
+    <div class="card"><div class="card-h"><h2>Payment history</h2></div>${historyList(st,c)}</div></div>
+   <div class="stack">${open?`<form class="card" id="sf"><h2>Record a payment</h2><p class="mute small" style="margin-top:4px">For money paid outside the suggestions, e.g. a partial payment.</p>
+      <label for="sfr">From</label><select id="sfr">${G.members.map(m=>`<option value="${m.member_id}">${esc(m.name)}</option>`).join('')}</select>
+      <label for="sto">To</label><select id="sto">${G.members.map((m,i)=>`<option value="${m.member_id}" ${i===1?'selected':''}>${esc(m.name)}</option>`).join('')}</select>
+      <label for="sa">Amount (${c})</label><input id="sa" type="number" inputmode="decimal" step="0.01" min="0" placeholder="0.00">
+      <label for="sn">Note (optional)</label><input id="sn" maxlength="200" placeholder="e.g. cash">
+      <button class="btn btn-dark btn-block mt">Record payment</button></form>`:''}
+    ${G.is_admin&&open?`<div class="card"><h2>Close the group</h2><p class="mute small" style="margin:4px 0 14px">When everyone is settled, close the group to make it read-only.</p><button class="btn btn-line btn-block" id="close" ${b.suggested_settlements.length?'disabled title="Settle all balances first"':''}>Close group</button></div>`:''}
+    ${!open?`<div class="card">${empty('This group is closed','All balances were settled.')}</div>`:''}</div></div>`;
+  const s0=b.suggested_settlements[0]; if(s0&&$('#sf')){ $('#sfr').value=s0.from; $('#sto').value=s0.to; $('#sa').placeholder=fmt(s0.amount)+' owed' }
+  if($('#sf')) $('#sf').onsubmit=async e=>{e.preventDefault(); await api(`/groups/${G.group_id}/settlements`,{method:'POST',body:{payer_id:+$('#sfr').value,receiver_id:+$('#sto').value,amount:+$('#sa').value,notes:$('#sn').value}});toast('Payment recorded');tabBalances()};
+  $$('[data-f]').forEach(btn=>btn.onclick=async()=>{ if(!confirm(`Record that ${btn.closest('.li').querySelector('.t').textContent} ${money(+btn.dataset.a,c)}?`)) return;
+    await api(`/groups/${G.group_id}/settlements`,{method:'POST',body:{payer_id:+btn.dataset.f,receiver_id:+btn.dataset.t,amount:+btn.dataset.a}});toast('Payment recorded');tabBalances()});
+  if($('#close')) $('#close').onclick=async()=>{if(confirm('Close this group? It becomes read-only.')){await api(`/groups/${G.group_id}/close`,{method:'POST'});toast('Group closed');renderGroup()}};
+}
+
+/* Members (FR06-09) */
+async function tabMembers(){
+  const open = G.status!=='Completed', friends = open ? await api('/friends') : [];
+  $('#tab').innerHTML = `<div class="grid g-main"><div class="stack">
+    <div class="card"><div class="card-h"><h2>Members</h2><span class="pill">${G.members.length}</span></div><div class="list">${G.members.map(m=>`<div class="li"><span class="badge">${esc(initials(m.name))}</span>
+      <div class="grow"><div class="t">${esc(m.name)}${m.member_id===G.my_member_id?' <span class="pill">you</span>':''}</div><div class="small mute">${m.role==='Admin'?'Group admin':m.is_guest?'Guest, no account':'Member'}</div></div>
+      ${m.guest_link?`<button class="btn btn-soft btn-sm" data-copy="${guestUrl(m.guest_link)}">Copy guest link</button>`:''}
+      ${G.is_admin&&m.role!=='Admin'?`<button class="btn btn-danger btn-sm" data-r="${m.member_id}" aria-label="Remove ${esc(m.name)}">Remove</button>`:''}</div>`).join('')}</div>
+      ${G.members.some(m=>m.guest_link)?'<p class="hint">Guests open their link to see expenses and balances without an account.</p>':''}</div>
+    ${G.pending_invites.length?`<div class="card"><div class="card-h"><h2>Waiting to accept</h2><span class="pill yellow">${G.pending_invites.length}</span></div><div class="list">${G.pending_invites.map(m=>`<div class="li"><span class="badge">${esc(initials(m.name))}</span><div class="grow"><div class="t">${esc(m.name)}</div><div class="small mute">Invitation sent</div></div>${G.is_admin?`<button class="btn btn-soft btn-sm" data-r="${m.member_id}">Cancel invite</button>`:''}</div>`).join('')}</div></div>`:''}
+    ${G.is_admin?`<form class="card" id="ef"><h2>Group details</h2>
+      <div class="row"><div><label for="en">Group name</label><input id="en" value="${esc(G.group_name)}" maxlength="80"></div>
+      <div><label for="ec">Base currency</label><select id="ec" ${open?'':'disabled'}>${META.currencies.map(c=>`<option value="${c.code}" ${c.code===G.base_currency?'selected':''}>${c.code} · ${esc(c.name)}</option>`).join('')}</select></div></div>
+      ${G.has_expenses&&open?'<p class="hint">Changing the base currency converts every expense, share and payment at today\'s rate. Balances keep the same value.</p>':''}
+      <button class="btn btn-dark mt">Save details</button></form>`:''}</div>
+   <div class="stack">${open?`<form class="card" id="invf"><h2>Invite someone</h2><p class="mute small" style="margin-top:4px">They see the invitation on their Groups page and join when they accept.</p>
+      <label for="ie">Email of an X-Split user</label><input id="ie" type="email" list="fl" placeholder="pick a friend or type an email"><datalist id="fl">${friends.map(f=>`<option value="${esc(f.email)}">${esc(f.full_name)}</option>`).join('')}</datalist>
+      ${friends.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">${friends.slice(0,6).map(f=>`<button type="button" class="pill" style="cursor:pointer" data-fe="${esc(f.email)}">${esc(f.full_name)}</button>`).join('')}</div>`:''}
+      <button class="btn btn-dark btn-block mt">Send invitation</button></form>
+    ${G.is_admin?`<form class="card" id="guf"><h2>Add a guest</h2><p class="mute small" style="margin-top:4px">For people without an account. They get a private read-only link.</p>
+      <label for="gn2">Name</label><input id="gn2" maxlength="80" required><label for="gc2">Contact (optional)</label><input id="gc2" placeholder="email or phone">
+      <button class="btn btn-line btn-block mt">Add guest</button></form>`:''}`:`<div class="card">${empty('This group is closed','Members can no longer be changed.')}</div>`}</div></div>`;
+  $$('[data-r]').forEach(b=>b.onclick=async()=>{if(!confirm(b.textContent.includes('Cancel')?'Cancel this invitation?':'Remove this member from the group?'))return; await api(`/groups/${G.group_id}/members/${b.dataset.r}`,{method:'DELETE'});toast('Done');renderGroup()});
+  $$('[data-copy]').forEach(b=>b.onclick=async()=>{ try{ await navigator.clipboard.writeText(b.dataset.copy); toast('Guest link copied') }catch(e){ prompt('Copy this guest link:', b.dataset.copy) } });
+  $$('[data-fe]').forEach(b=>b.onclick=()=>{$('#ie').value=b.dataset.fe;$('#ie').focus()});
+  if($('#ef')) $('#ef').onsubmit=async e=>{e.preventDefault(); const cur=$('#ec').value;
+    if(cur!==G.base_currency&&G.has_expenses&&!confirm(`Convert all amounts from ${G.base_currency} to ${cur}?`)) return;
+    await api('/groups/'+G.group_id,{method:'PUT',body:{group_name:$('#en').value,base_currency:cur}});toast('Group updated');renderGroup()};
+  if($('#invf')) $('#invf').onsubmit=async e=>{e.preventDefault(); await api(`/groups/${G.group_id}/members`,{method:'POST',body:{email:$('#ie').value}});toast('Invitation sent');renderGroup()};
+  if($('#guf')) $('#guf').onsubmit=async e=>{e.preventDefault(); await api(`/groups/${G.group_id}/members`,{method:'POST',body:{guest_name:$('#gn2').value,guest_contact:$('#gc2').value}});toast('Guest added');renderGroup()};
+}
+
+/* ---------------- friends (FR04) & profile (FR03) ---------------- */
+async function renderFriends(){
+  setNav('friends','Friends');
+  const f = await api('/friends');
+  app.innerHTML = `<div class="grid g-main"><div class="card"><div class="card-h"><h2>Your friends</h2><span class="pill">${f.length}</span></div>
+      ${f.length?`<div class="list">${f.map(x=>`<div class="li"><span class="badge">${esc(initials(x.full_name))}</span><div class="grow"><div class="t">${esc(x.full_name)}</div><div class="small mute">${esc(x.email)}</div></div><button class="btn btn-danger btn-sm" data-x="${x.user_id}" aria-label="Remove ${esc(x.full_name)}">Remove</button></div>`).join('')}</div>`
+        :empty('No friends yet','Add people who use X-Split, then invite them to groups in one click.')}</div>
+    <form class="card" id="ff"><h2>Add a friend</h2><p class="mute small" style="margin-top:4px">They must already have an X-Split account.</p>
+      <label for="fe">Email</label><input id="fe" type="email" placeholder="friend@example.com" required><button class="btn btn-dark btn-block mt">Add friend</button></form></div>`;
+  $('#ff').onsubmit=async e=>{e.preventDefault(); await api('/friends',{method:'POST',body:{email:$('#fe').value}});toast('Friend added');renderFriends()};
+  $$('[data-x]').forEach(b=>b.onclick=async()=>{if(!confirm('Remove this friend?'))return; await api('/friends/'+b.dataset.x,{method:'DELETE'});renderFriends()});
+}
+async function renderProfile(){
+  setNav('profile','Profile');
+  const u = await api('/me');
+  app.innerHTML = `<div class="grid g-main"><form class="card" id="pf"><div style="display:flex;align-items:center;gap:16px;margin-bottom:6px;min-width:0"><span class="avatar avatar-lg">${esc(initials(u.full_name))}</span><div style="min-width:0"><h2>${esc(u.full_name)}</h2><p class="mute" style="overflow-wrap:anywhere">${esc(u.email)}</p></div></div>
+      <label for="pn">Name</label><input id="pn" value="${esc(u.full_name)}" maxlength="80" autocomplete="name">
+      <label for="pe">Email</label><input id="pe" value="${esc(u.email)}" disabled>
+      <label for="pp">Phone (optional)</label><input id="pp" value="${esc(u.phone||'')}" autocomplete="tel" inputmode="tel">
+      <button class="btn btn-dark mt">Save profile</button></form>
+    <form class="card" id="pwf"><h2>Change password</h2>
+      <label for="pc">Current password</label><input id="pc" type="password" autocomplete="current-password">
+      <label for="pw">New password</label><input id="pw" type="password" autocomplete="new-password" minlength="6"><p class="hint">At least 6 characters.</p>
+      <button class="btn btn-line btn-block mt">Update password</button></form></div>`;
+  const save = async body => { const r=await api('/me',{method:'PUT',body}); ME=r; $('#who').textContent=r.full_name; $('#avatar').textContent=initials(r.full_name); return r };
+  $('#pf').onsubmit=async e=>{e.preventDefault(); await save({full_name:$('#pn').value,phone:$('#pp').value}); toast('Profile updated'); renderProfile()};
+  $('#pwf').onsubmit=async e=>{e.preventDefault(); if(!$('#pw').value) return toast('Enter a new password.',true);
+    await save({full_name:u.full_name,phone:u.phone,current_password:$('#pc').value,new_password:$('#pw').value}); toast('Password updated'); $('#pc').value=$('#pw').value=''};
+}
+
+/* ---------------- guest view (FR08) ---------------- */
+async function guestMode(token){
+  document.body.classList.add('bare');
+  try{
+    const d = await api('/guest/'+token), c=d.base_currency;
+    const mine = d.balances.find(b=>b.member_id===d.my_member_id);
+    document.title = d.group_name+' · X-Split';
+    app.innerHTML = `<div class="ghead" style="margin:8px 0 20px"><div class="logo" style="color:var(--ink);padding:0">${$('.logo svg').outerHTML}X-Split</div><span class="pill">Guest view · read only</span></div>
+      <h1>${esc(d.group_name)}</h1><p class="mute" style="margin:6px 0 20px">Hi ${esc(d.you)}! Amounts are in ${c}.</p>
+      <div class="grid g-stats"><div class="card stat"><span class="ic">${ico('scale')}</span><div><div class="k">${mine&&mine.net>0.004?'You are owed':mine&&mine.net<-0.004?'You owe':'Your balance'}</div><div class="v ${cls(mine?mine.net:0)}">${mine&&Math.abs(mine.net)>0.004?big(Math.abs(mine.net),c):'Settled'}</div></div></div>
+        <div class="card stat"><span class="ic">${ico('receipt')}</span><div><div class="k">Expenses</div><div class="v">${d.expenses.length}</div></div></div></div>
+      <div class="grid g-main mt"><div class="card"><div class="card-h"><h2>Expenses</h2></div>${expenseTable(d.expenses,c,false)}</div>
+        <div class="stack"><div class="card"><div class="card-h"><h2>Suggested payments</h2></div>${settleList(d.suggested_settlements,c)}</div>
+          <div class="card"><div class="card-h"><h2>Balances</h2></div>${balanceTable(d.balances,c,d.my_member_id)}</div>
+          <div class="card"><div class="card-h"><h2>Payments made</h2></div>${historyList(d.settlements,c)}</div></div></div>`;
+  }catch(e){ app.innerHTML=`<div class="card" style="max-width:520px;margin:10vh auto">${empty('This guest link is invalid or has expired','Ask the group admin for a new link.')}</div>` }
+}
+
+/* ---------------- boot ---------------- */
+async function boot(){
+  if(!META.currencies.length){
+    document.body.classList.add('bare');
+    app.innerHTML='<div class="card" style="max-width:520px;margin:12vh auto;text-align:center"><h2>Connecting to X-Split…</h2><p class="mute" id="wake" style="margin-top:8px" hidden>The free server is waking up. This can take up to a minute the first time.</p></div>';
+    const slow=setTimeout(()=>{const w=$('#wake'); if(w) w.hidden=false},3000);
+    try{ META = await fetch(API+'/api/meta').then(r=>{if(!r.ok) throw 0; return r.json()}) }
+    catch(e){ app.innerHTML='<div class="card" style="max-width:520px;margin:12vh auto;text-align:center"><h2>Cannot reach the server</h2><p class="mute" style="margin-top:8px">Check your connection and reload the page in a minute.</p></div>'; return }
+    finally{ clearTimeout(slow) }
+  }
+  const m = location.hash.match(/^#guest=([\w-]+)$/); if(m) return guestMode(m[1]);
+  try{ ME = await call('/me').then(r=>r.ok?r.json():null) }catch(e){ ME=null }
+  if(!ME) return renderAuth();
+  showShell(); renderHome();
+}
+
+/* ---------------- receipts ---------------- */
+document.addEventListener('click', async e=>{
+  const a=e.target.closest('[data-receipt]'); if(!a) return; e.preventDefault();
+  const w=window.open('','_blank');
+  try{ const r=await fetch(API+a.dataset.receipt,{credentials:'include'});
+    if(!r.ok) throw new Error((await r.json().catch(()=>({}))).error||'Could not open the receipt');
+    w.location=URL.createObjectURL(await r.blob()) }
+  catch(err){ if(w) w.close(); toast(err.message,true) }
+});
+window.addEventListener('hashchange',()=>location.reload());
+boot();
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: xsplit
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/meta
+    envVars:
+      - key: XSPLIT_SECRET
+        generateValue: true
+      - key: XSPLIT_HTTPS
+        value: "1"
+      - key: XSPLIT_FRONTEND_ORIGIN
+        sync: false
+      - key: DATABASE_URL
+        sync: false
